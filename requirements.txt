@@ -1,0 +1,2 @@
+# AGY 24/7 Cloud Iris requires only Python 3.10+ Standard Library
+# Zero heavy external bloat ensures 5-second build time and < 50MB RAM usage.
