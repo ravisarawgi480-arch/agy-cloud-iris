@@ -1,0 +1,23 @@
+[
+  {
+    "id": 50385272,
+    "title": "Claude Code sends your email address to websites",
+    "url": "https://github.com/anthropics/claude-code/issues/107757",
+    "score": 1287,
+    "tags": [
+      "claude"
+    ],
+    "timestamp": 1793971623
+  },
+  {
+    "id": 50381687,
+    "title": "Launch HN: Rivet (YC W23) \u2013 Scale and Orchestrate Agents on S3",
+    "url": "https://github.com/rivet-dev/rivet",
+    "score": 105,
+    "tags": [
+      "agent",
+      "agents"
+    ],
+    "timestamp": 1793971636
+  }
+]

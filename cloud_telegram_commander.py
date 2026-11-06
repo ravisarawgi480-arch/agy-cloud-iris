@@ -184,15 +184,25 @@ def process_message(text, chat_id):
 
     # 6. Perplexity-Grade Zero-Bakwas Tech & AI Radar
     elif any(k in clean for k in ["tech", "ai", "news", "radar", "tools", "perplexity", "update"]):
+        live_intel = ""
+        try:
+            from knowledge_feed import get_formatted_daily_signal
+            live_intel = get_formatted_daily_signal()
+        except Exception as e:
+            pass
+
+        intel_section = f"{live_intel}\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n" if live_intel else ""
+
         return (
             "💡 *PERPLEXITY-GRADE TECH & AI RADAR (Zero-Bakwas):*\n"
             "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            + intel_section +
             "🔥 *1. Browser-Use Autonomous Agents*\n"
-            "• *Kyun Kaam Ka Hai:* Anthropic & Playwright based agents ab cloud me aapke behalf par form fill, web scrap aur logins kar sakte hain.\n"
-            "• *Ravi Use-Case:* School portal se automated marksheet download & ticket booking alerts.\n\n"
+            "• *Kyun Kaam Ka Hai:* Anthropic & Playwright agents cloud me aapke behalf par form fill aur document download karte hain.\n"
+            "• *Ravi Use-Case:* School portal se automated circular/marksheet download.\n\n"
             "🎙️ *2. Wispr Flow & Voice-to-Action AI*\n"
-            "• *Kyun Kaam Ka Hai:* Bina type kiye pure Hinglish me bol kar direct tasks, emails aur messages dispatch karna.\n"
-            "• *Ravi Use-Case:* Gaadi chalate waqt phone par typing ki zero need.\n\n"
+            "• *Kyun Kaam Ka Hai:* Phone par bina type kiye Hinglish me bol kar direct tasks & messages dispatch karna.\n"
+            "• *Ravi Use-Case:* Gaadi chalate waqt zero-typing executive control.\n\n"
             "⚡ *3. Fixed-Rate Micro Cloud Workers (Render)*\n"
             "• *Kyun Kaam Ka Hai:* ₹580/mo me 24/7 autonomous micro-server jo PC band hone par bhi execute karta hai.\n"
             "• *Status:* Humaare system me already live hai!\n"
