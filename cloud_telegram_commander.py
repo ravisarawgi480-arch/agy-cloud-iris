@@ -6,6 +6,9 @@ import urllib.parse
 import urllib.request
 import ssl
 import subprocess
+import imaplib
+import email
+from email.header import decode_header
 
 sys.stdout.reconfigure(encoding='utf-8')
 
@@ -16,6 +19,7 @@ DAEMON_PATH = os.path.join(BASE_DIR, "cloud_school_daemon.py")
 
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 AUTHORIZED_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 if (not BOT_TOKEN or not AUTHORIZED_CHAT_ID) and os.path.exists(TELEGRAM_CONFIG_PATH):
     try:
@@ -23,8 +27,9 @@ if (not BOT_TOKEN or not AUTHORIZED_CHAT_ID) and os.path.exists(TELEGRAM_CONFIG_
             tg_config = json.load(f)
             BOT_TOKEN = BOT_TOKEN or tg_config.get("bot_token")
             AUTHORIZED_CHAT_ID = AUTHORIZED_CHAT_ID or tg_config.get("chat_id")
+            GEMINI_API_KEY = GEMINI_API_KEY or tg_config.get("gemini_api_key")
     except Exception as e:
-        print(f"Config load error: {e}")
+        print(f"Config load error: {e}", flush=True)
 
 if AUTHORIZED_CHAT_ID:
     AUTHORIZED_CHAT_ID = int(AUTHORIZED_CHAT_ID)
@@ -53,7 +58,6 @@ def handle_fee_summary():
     with open(CONFIG_PATH, "r", encoding="utf-8") as f:
         cfg = json.load(f)
 
-    import imaplib, email
     mail = imaplib.IMAP4_SSL('imap.gmail.com')
     mail.login(cfg['email'], cfg['app_password'])
     mail.select('"School"')
@@ -67,6 +71,8 @@ def handle_fee_summary():
     output = "📋 *RECENT SCHOOL FEE RECORDS (CIRS & SKV):*\n━━━━━━━━━━━━━━━━━━━\n"
     for mid in reversed(ids[-5:]):
         res, data = mail.fetch(mid, '(RFC822)')
+        if res != 'OK':
+            continue
         msg = email.message_from_bytes(data[0][1])
         sub = msg.get('Subject', '')
         date = msg.get('Date', '')[:16]
@@ -75,45 +81,121 @@ def handle_fee_summary():
     mail.logout()
     return output
 
+def search_school_emails(query_term):
+    try:
+        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+
+        mail = imaplib.IMAP4_SSL('imap.gmail.com')
+        mail.login(cfg['email'], cfg['app_password'])
+        mail.select('"School"')
+
+        status, msgs = mail.search(None, 'X-GM-RAW', f'"{query_term}"')
+        if not status == 'OK' or not msgs[0]:
+            mail.logout()
+            return f"🔍 School emails me *'{query_term}'* se related koi email nahi mila."
+
+        ids = msgs[0].split()
+        output = f"🔍 *SEARCH RESULTS FOR: '{query_term}':*\n━━━━━━━━━━━━━━━━━━━\n"
+        for mid in reversed(ids[-4:]):
+            res, data = mail.fetch(mid, '(RFC822)')
+            if res != 'OK':
+                continue
+            msg = email.message_from_bytes(data[0][1])
+            sub = msg.get('Subject', '')
+            date = msg.get('Date', '')[:16]
+            output += f"• *{date}*\n  Subject: {sub}\n"
+
+        mail.logout()
+        return output
+    except Exception as e:
+        return f"Error searching emails: {e}"
+
+def call_gemini_brain(prompt):
+    if not GEMINI_API_KEY:
+        return None
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
+    sys_prompt = (
+        "You are Iris, an intelligent, sharp executive AI assistant for Ravi (non-technical business owner, "
+        "children Aarav at CIRS & Avni at SKV). Answer clearly and concisely in natural Hinglish. "
+        "Keep responses punchy, helpful, and executive."
+    )
+    payload = {
+        "contents": [{
+            "parts": [{"text": f"{sys_prompt}\n\nUser Question: {prompt}"}]
+        }]
+    }
+    data = json.dumps(payload).encode('utf-8')
+    req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+    ctx = ssl._create_unverified_context()
+    try:
+        with urllib.request.urlopen(req, context=ctx, timeout=12) as response:
+            res_data = json.loads(response.read().decode('utf-8'))
+            return res_data['candidates'][0]['content']['parts'][0]['text']
+    except Exception as e:
+        print(f"Gemini API error: {e}", flush=True)
+        return None
+
 def process_message(text, chat_id):
     clean = text.strip().lower()
 
-    if clean in ["/start", "hi", "hello", "hey"]:
+    # 1. Greetings
+    if clean in ["/start", "hi", "hello", "hey", "namaste", "suno"]:
         return (
-            "👋 *Namaste Ravi Bhai! 24/7 Cloud AGY Brain Live Hai.*\n\n"
-            "Aapka computer band ho tab bhi yeh cloud server 24/7 active rehta hai:\n"
-            "• `/check` — Naye circulars / school mails ka live sync\n"
-            "• `/fees` — Aarav & Avni ki recent fee receipts & payments\n"
-            "• `/status` — 24/7 Cloud server health\n"
-            "• `/help` — Commands list\n\n"
-            "Bataiye kya command run karein?"
+            "👋 *Namaste Ravi Bhai! Iris Cloud AI Active Hai.*\n\n"
+            "Main 24/7 cloud par aapke sath connected hoon:\n"
+            "• Kisi bhi school circular ya topic ke baare me poochhein (e.g. `ice cream`, `holiday`, `fees`)\n"
+            "• `/fees` — Aarav & Avni ki recent fee receipts\n"
+            "• `/check` — Naye circulars ka instant cloud scan\n"
+            "• `/status` — 24/7 Server health check\n\n"
+            "Bataiye bhai, kya madad karoon?"
         )
-    elif clean in ["/check", "check", "check mail", "school"]:
-        send_reply(chat_id, "⏳ 24/7 Cloud engine scanning School emails...")
-        return handle_school_check()
-    elif clean in ["/fees", "fees", "fee", "aarav", "avni"]:
-        send_reply(chat_id, "🔍 Fetching fee records from Gmail...")
-        return handle_fee_summary()
-    elif clean in ["/status", "status"]:
+
+    # 2. Status Command
+    elif clean in ["/status", "status", "health"]:
         return (
-            "☁️ *24/7 CLOUD HOST HEALTH REPORT:*\n"
+            "☁️ *24/7 CLOUD COMMAND STATUS:*\n"
             "━━━━━━━━━━━━━━━━━━━\n"
-            "• **Status:** 24/7 Cloud Active\n"
-            "• **Host:** Linux Cloud VPS\n"
-            "• **Gmail Target:** ravikumarsarawgi@gmail.com\n"
-            "• **Label:** School (Active Watcher)\n"
-            "• **PC Dependency:** Zero (Independent 24/7)\n"
+            "• **Status:** Active & Responsive 🟢\n"
+            "• **Host:** Render Cloud (Starter Worker)\n"
+            "• **Gmail Radar:** ravikumarsarawgi@gmail.com (Daily)\n"
+            "• **Target Label:** School (CIRS & SKV)\n"
+            "• **PC Dependency:** Zero (100% Cloud Autonomous)\n"
             "━━━━━━━━━━━━━━━━━━━"
         )
-    elif clean in ["/help", "help"]:
-        return (
-            "📖 *COMMANDS:*\n"
-            "• `check` — School mails check\n"
-            "• `fees` — Fee summary\n"
-            "• `status` — Server status"
-        )
+
+    # 3. Direct School Checks
+    elif clean in ["/check", "check", "check mail", "scan"]:
+        send_reply(chat_id, "⏳ 24/7 Cloud engine school emails scan kar raha hai...")
+        return handle_school_check()
+
+    # 4. Fee Summary
+    elif clean in ["/fees", "fees", "fee", "payment", "receipt"]:
+        send_reply(chat_id, "🔍 Fetching fee records from Gmail...")
+        return handle_fee_summary()
+
+    # 5. Smart Search across School Emails
+    elif any(k in clean for k in ["circular", "ice cream", "permission", "holiday", "ptm", "uniform", "skv", "cirs", "aarav", "avni", "principal", "exam", "report"]):
+        # Extract meaningful keyword
+        words = [w for w in clean.replace("?", "").replace("kya", "").replace("hai", "").replace("batao", "").split() if len(w) > 2]
+        query_kw = words[0] if words else "school"
+        send_reply(chat_id, f"🔍 School emails me *'{query_kw}'* search kiya ja raha hai...")
+        return search_school_emails(query_kw)
+
+    # 6. Fallback to Gemini Brain (if available) or Intelligent Assistant Reply
     else:
-        return f"🤖 *Command Received:* \"{text}\"\nType `fees` or `check` to query your cloud database."
+        ai_reply = call_gemini_brain(text)
+        if ai_reply:
+            return ai_reply
+        return (
+            f"🤖 *Iris Cloud Assistant:* \"{text}\"\n\n"
+            "Main aapke liye school circulars, fees, aur system health check kar sakti hoon.\n"
+            "Kuch bhi poochhne ke liye type karein:\n"
+            "• `fees` — Fee summary\n"
+            "• `check` — Live email scan\n"
+            "• `status` — Cloud health\n"
+            "• Ya koi keyword jaise: `holiday`, `ice cream`, `circular`"
+        )
 
 def start_listening():
     print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Cloud Telegram Commander listening (Chat ID: {AUTHORIZED_CHAT_ID})...", flush=True)
@@ -142,11 +224,14 @@ def start_listening():
                     print(f"Cloud command from Ravi: {user_text}", flush=True)
 
                     reply = process_message(user_text, sender_id)
-                    send_reply(sender_id, reply)
+                    if reply:
+                        send_reply(sender_id, reply)
 
-            time.sleep(1)
-        except Exception:
+        except Exception as e:
+            print(f"Polling error: {e}", flush=True)
             time.sleep(3)
+
+        time.sleep(1)
 
 if __name__ == "__main__":
     start_listening()
