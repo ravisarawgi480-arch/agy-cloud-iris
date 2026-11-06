@@ -133,16 +133,21 @@ def format_alert(alert):
     return msg
 
 def dispatch_telegram(alert_text):
-    if not os.path.exists(TELEGRAM_CONFIG_PATH):
-        return False
-    try:
-        with open(TELEGRAM_CONFIG_PATH, "r", encoding="utf-8") as f:
-            tg = json.load(f)
-        token = tg.get("bot_token")
-        chat_id = tg.get("chat_id")
-        if not token or not chat_id:
-            return False
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    if (not token or not chat_id) and os.path.exists(TELEGRAM_CONFIG_PATH):
+        try:
+            with open(TELEGRAM_CONFIG_PATH, "r", encoding="utf-8") as f:
+                tg = json.load(f)
+            token = token or tg.get("bot_token")
+            chat_id = chat_id or tg.get("chat_id")
+        except Exception:
+            pass
 
+    if not token or not chat_id:
+        return False
+
+    try:
         ctx = ssl._create_unverified_context()
         params = urllib.parse.urlencode({'chat_id': chat_id, 'text': alert_text, 'parse_mode': 'Markdown'}).encode('utf-8')
         req = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage", data=params)
@@ -154,15 +159,20 @@ def dispatch_telegram(alert_text):
         return False
 
 def run_sync_cycle():
-    if not os.path.exists(CONFIG_PATH):
-        print("Config not found.", flush=True)
+    user = os.environ.get("GMAIL_USER")
+    pwd = os.environ.get("GMAIL_APP_PASSWORD")
+    if (not user or not pwd) and os.path.exists(CONFIG_PATH):
+        try:
+            with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+                config = json.load(f)
+            user = user or config.get("email")
+            pwd = pwd or config.get("app_password")
+        except Exception:
+            pass
+
+    if not user or not pwd:
+        print("Credentials not found in environment or config file.", flush=True)
         return
-
-    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-        config = json.load(f)
-
-    user = config["email"]
-    pwd = config["app_password"]
 
     processed = load_processed_ids()
     print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Cloud Scanner checking Gmail 'School' label for {user}...", flush=True)

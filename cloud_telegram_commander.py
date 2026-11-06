@@ -14,11 +14,20 @@ TELEGRAM_CONFIG_PATH = os.path.join(BASE_DIR, "telegram_config.json")
 CONFIG_PATH = os.path.join(BASE_DIR, "email_config.json")
 DAEMON_PATH = os.path.join(BASE_DIR, "cloud_school_daemon.py")
 
-with open(TELEGRAM_CONFIG_PATH, "r", encoding="utf-8") as f:
-    tg_config = json.load(f)
+BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+AUTHORIZED_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
-BOT_TOKEN = tg_config["bot_token"]
-AUTHORIZED_CHAT_ID = int(tg_config["chat_id"])
+if (not BOT_TOKEN or not AUTHORIZED_CHAT_ID) and os.path.exists(TELEGRAM_CONFIG_PATH):
+    try:
+        with open(TELEGRAM_CONFIG_PATH, "r", encoding="utf-8") as f:
+            tg_config = json.load(f)
+            BOT_TOKEN = BOT_TOKEN or tg_config.get("bot_token")
+            AUTHORIZED_CHAT_ID = AUTHORIZED_CHAT_ID or tg_config.get("chat_id")
+    except Exception as e:
+        print(f"Config load error: {e}")
+
+if AUTHORIZED_CHAT_ID:
+    AUTHORIZED_CHAT_ID = int(AUTHORIZED_CHAT_ID)
 
 def send_reply(chat_id, text):
     ctx = ssl._create_unverified_context()
