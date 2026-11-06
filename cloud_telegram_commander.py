@@ -182,7 +182,25 @@ def process_message(text, chat_id):
         send_reply(chat_id, f"🔍 School emails me *'{query_kw}'* search kiya ja raha hai...")
         return search_school_emails(query_kw)
 
-    # 6. Fallback to Gemini Brain (if available) or Intelligent Assistant Reply
+    # 6. Perplexity-Grade Zero-Bakwas Tech & AI Radar
+    elif any(k in clean for k in ["tech", "ai", "news", "radar", "tools", "perplexity", "update"]):
+        return (
+            "💡 *PERPLEXITY-GRADE TECH & AI RADAR (Zero-Bakwas):*\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "🔥 *1. Browser-Use Autonomous Agents*\n"
+            "• *Kyun Kaam Ka Hai:* Anthropic & Playwright based agents ab cloud me aapke behalf par form fill, web scrap aur logins kar sakte hain.\n"
+            "• *Ravi Use-Case:* School portal se automated marksheet download & ticket booking alerts.\n\n"
+            "🎙️ *2. Wispr Flow & Voice-to-Action AI*\n"
+            "• *Kyun Kaam Ka Hai:* Bina type kiye pure Hinglish me bol kar direct tasks, emails aur messages dispatch karna.\n"
+            "• *Ravi Use-Case:* Gaadi chalate waqt phone par typing ki zero need.\n\n"
+            "⚡ *3. Fixed-Rate Micro Cloud Workers (Render)*\n"
+            "• *Kyun Kaam Ka Hai:* ₹580/mo me 24/7 autonomous micro-server jo PC band hone par bhi execute karta hai.\n"
+            "• *Status:* Humaare system me already live hai!\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "📌 *Strict Rule:* No marketing hype, no 100-AI lists. Sirf verified real business ROI."
+        )
+
+    # 7. Fallback to Gemini Brain (if available) or Intelligent Assistant Reply
     else:
         ai_reply = call_gemini_brain(text)
         if ai_reply:

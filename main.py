@@ -76,7 +76,8 @@ def run_morning_briefing():
                     f"📅 *Date:* {now_ist.strftime('%d %B %Y')}\n\n"
                     f"• 🏫 *School Radar:* CIRS & SKV monitoring active\n"
                     f"• ☁️ *Cloud Status:* 24/7 Render Worker 100% Healthy\n"
-                    f"• 📲 *On-Demand Commands:* Reply `fees`, `check`, ya kisi bhi circular ka topic poochhein\n"
+                    f"• 💡 *Tech & AI Radar:* Type `tech` for today's zero-bakwas curated tools\n"
+                    f"• 📲 *On-Demand:* Reply `fees`, `check`, ya koi bhi topic poochhein\n"
                     f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                     f"Have a powerful & productive day ahead! 🚀"
                 )
