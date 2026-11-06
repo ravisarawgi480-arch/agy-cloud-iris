@@ -26,15 +26,15 @@ def run_telegram_bot():
         time.sleep(5)
 
 def run_school_monitor():
-    print("[INIT] Starting 24/7 School Email Monitor (Every 15 mins)...", flush=True)
+    print("[INIT] Starting School Email Monitor (Once a day / Every 24 hours)...", flush=True)
     while True:
         try:
             p = subprocess.run([sys.executable, os.path.join(BASE_DIR, "cloud_school_daemon.py")])
-            print("[SYNC] School monitor cycle finished.", flush=True)
+            print("[SYNC] School monitor daily cycle finished.", flush=True)
         except Exception as e:
             print(f"[ERROR] School monitor crashed: {e}", flush=True)
-        # Sleep for 15 minutes between polling cycles
-        time.sleep(900)
+        # Sleep for 24 hours (86,400 seconds) between daily polling cycles
+        time.sleep(86400)
 
 class HealthHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
