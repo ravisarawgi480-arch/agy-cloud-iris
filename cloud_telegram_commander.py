@@ -10,6 +10,7 @@ import imaplib
 import email
 from email.header import decode_header
 from brain_memory import get_context_for_query, remember_new_fact, get_memory_summary
+import gmail_filter_manager
 
 sys.stdout.reconfigure(encoding='utf-8')
 
@@ -150,6 +151,7 @@ def process_message(text, chat_id):
             "• Kisi bhi school circular ya topic ke baare me poochhein (e.g. `ice cream`, `holiday`, `fees`)\n"
             "• `/fees` — Aarav & Avni ki recent fee receipts\n"
             "• `/check` — Naye circulars ka instant cloud scan\n"
+            "• `/filters` — Gmail server filters list & manager\n"
             "• `/memory` — Self-extracting Second Brain memory summary\n"
             "• `/status` — 24/7 Server health check\n\n"
             "Bataiye bhai, kya madad karoon?"
@@ -226,7 +228,85 @@ def process_message(text, chat_id):
             "📌 *Strict Rule:* No marketing hype, no 100-AI lists. Sirf verified real business ROI."
         )
 
-    # 9. Fallback: Contextual AI Brain Reply
+    # 9. Gmail Server Filters Manager
+    elif clean in ["/filters", "filters", "filter list", "list filters", "filter"]:
+        try:
+            all_f = gmail_filter_manager.list_filters()
+            total = len(all_f)
+            lines = [f"📧 *GMAIL SERVER FILTERS (Total: {total}):*\n━━━━━━━━━━━━━━━━━━━"]
+            for f in all_f[:5]:
+                crit = f.get('criteria', {})
+                act = f.get('action', {})
+                c_str = ", ".join(f"{k}: `{v}`" for k, v in crit.items())
+                a_str = ", ".join(f"{k}: `{v}`" for k, v in act.items())
+                short_id = f['id'][:10]
+                lines.append(f"• *ID:* `{short_id}...`\n  Match: {c_str}\n  Action: {a_str}\n")
+            lines.append("━━━━━━━━━━━━━━━━━━━\n💡 *Telegram Commands:*")
+            lines.append("• `filter search icici` (Search any rule)")
+            lines.append("• `filter create from:spam@xyz.com action:trash`")
+            lines.append("• `filter delete <ID>`")
+            return "\n".join(lines)
+        except Exception as e:
+            return f"⚠️ Error fetching filters from Google: {e}"
+
+    elif clean.startswith("filter search ") or clean.startswith("search filter "):
+        term = text.split(" ", 2)[2].strip()
+        try:
+            matched = gmail_filter_manager.search_filters(term)
+            if not matched:
+                return f"🔍 Google server par *'{term}'* se related koi filter nahi mila."
+            lines = [f"🔍 *MATCHING FILTERS FOR '{term}' ({len(matched)} found):*\n━━━━━━━━━━━━━━━━━━━"]
+            for f in matched[:5]:
+                crit = f.get('criteria', {})
+                act = f.get('action', {})
+                c_str = ", ".join(f"{k}: `{v}`" for k, v in crit.items())
+                a_str = ", ".join(f"{k}: `{v}`" for k, v in act.items())
+                lines.append(f"• *ID:* `{f['id']}`\n  Match: {c_str}\n  Action: {a_str}\n")
+            return "\n".join(lines)
+        except Exception as e:
+            return f"⚠️ Error searching filters: {e}"
+
+    elif clean.startswith("filter delete ") or clean.startswith("del filter "):
+        fid = text.split(" ", 2)[2].strip()
+        try:
+            gmail_filter_manager.delete_server_filter(fid)
+            return f"🗑️ *Success:* Filter Rule `{fid}` deleted from Google Cloud Server!"
+        except Exception as e:
+            return f"⚠️ Error deleting filter `{fid}`: {e}"
+
+    elif clean.startswith("filter create ") or clean.startswith("create filter "):
+        cmd_args = text.split(" ", 2)[2].strip()
+        from_s = ""
+        action_s = "trash"
+        label_s = ""
+        subj_s = ""
+        for part in cmd_args.split():
+            if part.lower().startswith("from:"):
+                from_s = part[5:]
+            elif part.lower().startswith("subject:"):
+                subj_s = part[8:]
+            elif part.lower().startswith("label:"):
+                action_s = "label"
+                label_s = part[6:]
+            elif part.lower().startswith("action:"):
+                action_s = part[7:].lower()
+        if not from_s and not subj_s:
+            return "⚠️ Please specify at least `from:` or `subject:`. Example: `filter create from:promo@xyz.com action:trash`"
+        try:
+            new_f = gmail_filter_manager.create_smart_filter(from_sender=from_s, subject=subj_s, action=action_s, label_name=label_s)
+            return (
+                f"✅ *FILTER CREATED ON GOOGLE CLOUD SERVER!*\n━━━━━━━━━━━━━━━━━━━\n"
+                f"• *Rule ID:* `{new_f.get('id')}`\n"
+                f"• *Sender:* `{from_s or 'Any'}`\n"
+                f"• *Subject:* `{subj_s or 'Any'}`\n"
+                f"• *Action:* `{action_s} {label_s}`\n"
+                f"━━━━━━━━━━━━━━━━━━━\n"
+                f"Rule is now live inside your Gmail account!"
+            )
+        except Exception as e:
+            return f"⚠️ Error creating filter on Google Server: {e}"
+
+    # 10. Fallback: Contextual AI Brain Reply
     else:
         ai_reply = call_gemini_brain(text)
         if ai_reply:
