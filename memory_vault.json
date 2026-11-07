@@ -1,0 +1,47 @@
+{
+  "user": {
+    "name": "Ravi",
+    "role": "Business Owner",
+    "tone": "Natural Hinglish, zero tech jargon, direct bottom-line verdicts",
+    "budget": "Max ₹2,000/mo ($25/mo) predictable fixed cost",
+    "devices": ["iPhone", "Windows 11 PC"]
+  },
+  "knowledge_base": [
+    {
+      "topic": "Cloud Worker & Render",
+      "keywords": ["render", "cloud", "server", "worker", "vps", "host", "deploy", "iris"],
+      "fact": "Render 24/7 Cloud Background Worker 'agy-cloud-iris' running on $7/mo Starter plan connected to GitHub repo 'ravisarawgi480-arch/agy-cloud-iris' with auto-deploy."
+    },
+    {
+      "topic": "Telegram Bot",
+      "keywords": ["telegram", "bot", "iris", "channel", "iphone", "chat"],
+      "fact": "Telegram Bot @iris_vps_rk_bot (Chat ID: 7336180105) is Ravi's primary 24/7 mobile control center for school radar, cloud status, and on-demand queries."
+    },
+    {
+      "topic": "School Radar (CIRS & SKV)",
+      "keywords": ["school", "fees", "fee", "cirs", "skv", "aarav", "avni", "circular", "exam", "holiday"],
+      "fact": "School radar monitors Gmail for children Aarav (CIRS) and Avni (SKV). Runs once every 24 hours, plus on-demand checks via 'fees' and 'check' commands."
+    },
+    {
+      "topic": "Tally & Accounting",
+      "keywords": ["tally", "tallyprime", "1800", "ledger", "voucher", "accounting", "quick entry", "tcp", "tdl"],
+      "fact": "Ravi uses TallyPrime (with .1800 files like TranMgr.1800, Manager.1800). Has custom TCP file 'D:\\AK\\Tally TCP\\Quick Entry ReCode.tcp' for rapid voucher entry."
+    },
+    {
+      "topic": "Reverse Engineering (REA)",
+      "keywords": ["rea", "reverse", "engineer", "decode", "decompile", "tcp", "github rea"],
+      "fact": "Ravi explored GitHub trending repo 'reverse-engineer-anything' (REA) to understand decompiling/customizing compiled Tally TCP add-ons."
+    },
+    {
+      "topic": "WhatsApp Mirror",
+      "keywords": ["whatsapp", "mirror", "phone", "alert", "+919334444444"],
+      "fact": "WhatsApp Mirror connected to Ravi's primary number +919334444444 via clean Chrome profile with 0% ban risk."
+    },
+    {
+      "topic": "Second Brain Philosophy",
+      "keywords": ["second brain", "memory", "super brain", "bhav", "smart", "autonomous", "hands-off"],
+      "fact": "Ravi expects 100% autonomous execution, self-extracting memory that understands his 'bhav' (intent) without needing repetitive prompting or context babysitting."
+    }
+  ],
+  "custom_memories": []
+}

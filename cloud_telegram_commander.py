@@ -9,6 +9,7 @@ import subprocess
 import imaplib
 import email
 from email.header import decode_header
+from brain_memory import get_context_for_query, remember_new_fact, get_memory_summary
 
 sys.stdout.reconfigure(encoding='utf-8')
 
@@ -115,14 +116,16 @@ def call_gemini_brain(prompt):
     if not GEMINI_API_KEY:
         return None
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
+    memory_context = get_context_for_query(prompt)
+    context_block = f"\n[Ravi's Second Brain Context & Intent]:\n{memory_context}\n" if memory_context else ""
     sys_prompt = (
         "You are Iris, an intelligent, sharp executive AI assistant for Ravi (non-technical business owner, "
         "children Aarav at CIRS & Avni at SKV). Answer clearly and concisely in natural Hinglish. "
-        "Keep responses punchy, helpful, and executive."
+        "Keep responses punchy, helpful, and executive. Intuitively connect past discussions from context."
     )
     payload = {
         "contents": [{
-            "parts": [{"text": f"{sys_prompt}\n\nUser Question: {prompt}"}]
+            "parts": [{"text": f"{sys_prompt}{context_block}\n\nUser Question: {prompt}"}]
         }]
     }
     data = json.dumps(payload).encode('utf-8')
@@ -147,6 +150,7 @@ def process_message(text, chat_id):
             "• Kisi bhi school circular ya topic ke baare me poochhein (e.g. `ice cream`, `holiday`, `fees`)\n"
             "• `/fees` — Aarav & Avni ki recent fee receipts\n"
             "• `/check` — Naye circulars ka instant cloud scan\n"
+            "• `/memory` — Self-extracting Second Brain memory summary\n"
             "• `/status` — 24/7 Server health check\n\n"
             "Bataiye bhai, kya madad karoon?"
         )
@@ -158,6 +162,7 @@ def process_message(text, chat_id):
             "━━━━━━━━━━━━━━━━━━━\n"
             "• **Status:** Active & Responsive 🟢\n"
             "• **Host:** Render Cloud (Starter Worker)\n"
+            "• **Brain Engine:** Self-Extracting Semantic Memory Vault\n"
             "• **Gmail Radar:** ravikumarsarawgi@gmail.com (Daily)\n"
             "• **Target Label:** School (CIRS & SKV)\n"
             "• **PC Dependency:** Zero (100% Cloud Autonomous)\n"
@@ -174,7 +179,18 @@ def process_message(text, chat_id):
         send_reply(chat_id, "🔍 Fetching fee records from Gmail...")
         return handle_fee_summary()
 
-    # 5. Smart Search across School Emails
+    # 5. Memory Vault Review
+    elif clean in ["/memory", "memory", "brain"]:
+        return get_memory_summary()
+
+    # 6. Auto-Learn / Save New Memory on the Fly
+    elif clean.startswith("remember ") or clean.startswith("yaad rakhna ") or clean.startswith("yaad rakh "):
+        fact = text.split(" ", 1)[1].strip()
+        if remember_new_fact(fact):
+            return f"✅ *Yaad Rakh Liya Bhai!*\nSaved to Cloud Memory Vault:\n\"{fact}\""
+        return "⚠️ Memory save karne me issue aaya."
+
+    # 7. Smart Search across School Emails
     elif any(k in clean for k in ["circular", "ice cream", "permission", "holiday", "ptm", "uniform", "skv", "cirs", "aarav", "avni", "principal", "exam", "report"]):
         # Extract meaningful keyword
         words = [w for w in clean.replace("?", "").replace("kya", "").replace("hai", "").replace("batao", "").split() if len(w) > 2]
@@ -182,7 +198,7 @@ def process_message(text, chat_id):
         send_reply(chat_id, f"🔍 School emails me *'{query_kw}'* search kiya ja raha hai...")
         return search_school_emails(query_kw)
 
-    # 6. Perplexity-Grade Zero-Bakwas Tech & AI Radar
+    # 8. Perplexity-Grade Zero-Bakwas Tech & AI Radar
     elif any(k in clean for k in ["tech", "ai", "news", "radar", "tools", "perplexity", "update"]):
         live_intel = ""
         try:
@@ -210,19 +226,31 @@ def process_message(text, chat_id):
             "📌 *Strict Rule:* No marketing hype, no 100-AI lists. Sirf verified real business ROI."
         )
 
-    # 7. Fallback to Gemini Brain (if available) or Intelligent Assistant Reply
+    # 9. Fallback: Contextual AI Brain Reply
     else:
         ai_reply = call_gemini_brain(text)
         if ai_reply:
             return ai_reply
+        
+        # If Gemini is not configured, use local Semantic Memory match
+        memory_context = get_context_for_query(text)
+        if memory_context:
+            return (
+                f"🧠 *Iris Second Brain Insight:* \"{text}\"\n"
+                f"━━━━━━━━━━━━━━━━━━━\n"
+                f"{memory_context}\n"
+                f"━━━━━━━━━━━━━━━━━━━\n"
+                f"Bataiye bhai, isme aage kya execute karein?"
+            )
+            
         return (
             f"🤖 *Iris Cloud Assistant:* \"{text}\"\n\n"
             "Main aapke liye school circulars, fees, aur system health check kar sakti hoon.\n"
             "Kuch bhi poochhne ke liye type karein:\n"
             "• `fees` — Fee summary\n"
             "• `check` — Live email scan\n"
-            "• `status` — Cloud health\n"
-            "• Ya koi keyword jaise: `holiday`, `ice cream`, `circular`"
+            "• `memory` — Second Brain memory review\n"
+            "• `status` — Cloud health"
         )
 
 def start_listening():
